@@ -1,0 +1,10 @@
+#设置文件保存的根目录
+webdir.filePath: /data/webDir/data
+#设置临时目录，用作上传文件的等临时保存
+tempDir: /data/webDir/temp
+#aria2 aria2 下载的连接的url 注意 必须是和本机在一起，下载文件的路径为 webdir.filePath/remoteDownload
+aria2.url: http://127.0.0.1:6800/jsonrpc
+#aria2 鉴权token
+aria2.token: 123456798
+#设置能登录的用户，json格式 可以添加多个用户
+auth.user.json: '[{"user":"test","pwd":"123456"}]'

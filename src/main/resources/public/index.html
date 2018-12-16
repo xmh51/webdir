@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
+    <link rel="stylesheet" href="css/bootstrap.3.3.7.min.css" crossorigin="anonymous">
+    <!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
+    <link rel="stylesheet" href="css/font-awesome.min.css" crossorigin="anonymous">
+
+    <title>WEB DIR</title>
+</head>
+<body>
+<nav class="navbar navbar-default navbar-static-top">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                    data-target="#bs-example-navbar-collapse-6" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">WEB DIR</a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-6">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="rd/index.html">离线下载</a></li>
+            </ul>
+        </div><!-- /.navbar-collapse -->
+    </div>
+</nav>
+<div>
+    <div class="panel panel-default">
+        <ol class="breadcrumb" id="dirList" style="display: none" v-show="true">
+            <li v-for="(item) in dirItems">
+                <a :href="'?filePath='+item.base64FilePath">{{item.name}}</a>
+            </li>
+        </ol>
+        <div class="dropdown">
+            <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                动作
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                <li>
+                    <a href="#" class=" uploadButton">上传文件</a>
+                </li>
+                <li><a href="#" onclick="$('#createDir').modal('show')" class="createDir">新建文件夹</a></li>
+            </ul>
+        </div>
+
+        <!-- Table -->
+        <table class="table table-hover">
+            <thead>
+            <tr>
+                <th width="75%">文件</th>
+                <th width="5%">文件大小</th>
+                <th width="10%">创建时间</th>
+                <th width="10%">修改时间</th>
+            </tr>
+            </thead>
+            <tbody id="file-body" style="display: none " v-show="true">
+            <tr v-for="item in items" class="file_item" :file_path="item.relativeFilePath" :file_name="item.fileName">
+                <td><img :src="'icons/'+item.fmtType+'.png'" style="width: auto;height: auto">
+                    <a :href="'?filePath='+item.base64FilePath" v-if="item.dir"> {{ item.fileName }}</a>
+                    <a target="_blank" :href="'api/file/play?filePath='+item.base64FilePath" v-else-if="item.fileType === 'mp4'|| item.fileType === 'wbem' || item.fileType === 'ogg'"> {{ item.fileName }}</a>
+                    <a  :href="'api/file/download?filePath='+item.base64FilePath" v-else> {{ item.fileName }}</a>
+                    <!-- Single button -->
+                    <div class="btn-group  pull-right">
+                        <a href="" class="dropdown-toggle"  data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="icon-exchange pull-right"></span></a>
+                        <ul class="dropdown-menu">
+                            <li v-if="!item.dir"><a :href="'api/file/download?filePath='+item.base64FilePath">下载</a></li>
+                            <li><a href="#"  v-on:click="fileRename" >重命名</a></li>
+                            <li><a href="#"  v-on:click="fileDelete" >删除</a></li>
+                            <li><a href="#"  v-on:click="moveOrCopy">移动/复制</a></li>
+                        </ul>
+                    </div>
+                </td>
+                <td v-if="item.dir">--</td>
+                <td v-else>{{ item.fileSize }}</td>
+                <td>{{ item.creationTime }}</td>
+                <td>{{ item.lastModifiedTime }}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!--上传文件-->
+<form style="display:none" class="uploadForm" action="" method="post" enctype="multipart/form-data">
+    　　<input type="file" name="file" value="">
+</form>
+<!--新建文件夹 -->
+<div class="modal fade" id="createDir" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel"></h4>
+            </div>
+            <div class="input-group " style="width: 100%">
+                <input type="text" name="createDirNmae" class="form-control" placeholder="新建文件夹" aria-describedby="basic-addon1">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary createDirClick">确认</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
+</div>
+
+<!--重命名 -->
+<div class="modal fade" id="rename" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" ></h4>
+            </div>
+            <div class="input-group " style="width: 100%">
+                <input type="hidden" name="oldFileName" class="form-control"  aria-describedby="basic-addon1">
+                <input type="text" name="newFileName" class="form-control" placeholder="重命名文件夹" aria-describedby="basic-addon1">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary buttonClick">确认</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
+</div>
+
+<!--移动或复制 -->
+<div class="modal fade" id="moveOrCopy" :file_name="fileName" :base64_file_path="base64FilePath" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" ></h4>
+            </div>
+            <div class="input-group " style="width: 100%">
+                <ol class="breadcrumb" style="display: none" v-show="true">
+                    <li v-for="(item) in filePathItems">
+                        <a href="#" :base64_file_path="item.base64FilePath"  href="#" v-on:click="dirClick" >{{item.name}}</a>
+                    </li>
+                </ol>
+                <!-- Table -->
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th width="75%">目录</th>
+                        <th width="25%">修改时间</th>
+                    </tr>
+                    </thead>
+                    <tbody style="display: none " v-show="true">
+                    <tr  v-if="dirItems.length ==0">
+                        <td>
+                            没有更多的子文件夹
+                        </td>
+                    </tr>
+                    <tr v-for="item in dirItems" :file_path="item.relativeFilePath">
+                        <td><img src="icons/folder.png" style="width: auto;height: auto">
+                            <a  :base64_file_path="item.base64FilePath"  href="#" v-on:click="dirClick">{{ item.fileName }}</a>
+                        </td>
+                        <td>{{ item.lastModifiedTime }}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary buttonClick" action_type="1" v-on:click="moveOrCopyAction">复制</button>
+                <button type="button" class="btn btn-primary buttonClick" action_type="2" v-on:click="moveOrCopyAction">移动</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
+</div>
+<script src="js/base64.min.js"></script>
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="js/jquery/3.2.1/jquery.min.js" rossorigin="anonymous"></script>
+<script src="js/popper.1.12.9.min.js" crossorigin="anonymous"></script>
+<!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+<script src="js/bootstrap.3.3.7.min.js" crossorigin="anonymous"></script>
+
+<script>
+    var getUrlParameter = function getUrlParameter(sParam) {
+        var sPageURL = window.location.search.substring(1),
+            sURLVariables = sPageURL.split('&'),
+            sParameterName,
+            i;
+
+        for (i = 0; i < sURLVariables.length; i++) {
+            sParameterName = sURLVariables[i].split('=');
+
+            if (sParameterName[0] === sParam) {
+                return sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
+            }
+        }
+    };
+
+    function datefmt(time,fmt) { //author: meizz
+        var date=new Date(time);
+        var o = {
+            "M+": date.getMonth() + 1, //月份
+            "d+": date.getDate(), //日
+            "h+": date.getHours(), //小时
+            "m+": date.getMinutes(), //分
+            "s+": date.getSeconds(), //秒
+            "q+": Math.floor((date.getMonth() + 3) / 3), //季度
+            "S": date.getMilliseconds() //毫秒
+        };
+        if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
+        for (var k in o)
+            if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+        return fmt;
+    }
+
+    function urlencodeFormData(item){
+        var params = new URLSearchParams();
+        for(var key in item){
+            params.append(key.toString(), item[key].toString());
+        }
+        return params.toString();
+    }
+
+    function formatBytes(a, b) {
+        if (0 == a) return "0 Bytes";
+        var c = 1024, d = b || 2, e = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"],
+            f = Math.floor(Math.log(a) / Math.log(c));
+        return parseFloat((a / Math.pow(c, f)).toFixed(d)) + " " + e[f];
+    }
+</script>
+<script>
+    $(document).ready(function () {
+        var fileType={"archive":["7z","bz2","cab","gz","tar"],"audio":["aac","aif","aifc","aiff","ape","au","flac","iff","m4a","mid","mp3","mpa","ra","wav","wma","f4a","f4b","oga","ogg","xm","it","s3m","mod"],"bin":["bin","hex"],"bmp":["bmp"],"c":["c"],"calc":["xlsx","xlsm","xltx","xltm","xlam","xlr","xls","csv"],"cd":["iso"],"cpp":["cpp"],"css":["css","sass","scss"],"deb":["deb"],"doc":["doc","docx","docm","dot","dotx","dotm","log","msg","odt","pages","rtf","tex","wpd","wps"],"draw":["svg","svgz"],"eps":["ai","eps"],"exe":["exe"],"gif":["gif"],"h":["h"],"html":["html","xhtml","shtml","htm","URL","url"],"ico":["ico"],"java":["jar"],"jpg":["jpg","jpeg","jpe"],"js":["js","json"],"markdown":["md"],"package":["pkg","dmg"],"pdf":["pdf"],"php":["php","phtml"],"playlist":["m3u","m3u8","pls","pls8"],"png":["png"],"ps":["ps"],"psd":["psd"],"py":["py"],"rar":["rar"],"rb":["rb"],"rpm":["rpm"],"rss":["rss"],"script":["bat","cmd","sh"],"sql":["sql"],"tiff":["tiff","tif"],"text":["txt","nfo","epub","mobi","azw"],"video":["asf","asx","avi","flv","mkv","mov","mp4","mpg","rm","srt","swf","vob","wmv","m4v","f4v","f4p","ogv"],"xml":["xml"],"zip":["zip"]};
+        var fileTypeMap={};
+        function initFileTypeMap(){
+            for(var fileTypeName in fileType){
+                var fileTypeList=fileType[fileTypeName];
+                for(var temp in fileTypeList){
+                    temp=fileTypeList[temp]
+                    fileTypeMap[temp]=fileTypeName;
+                }
+            }
+        }
+        initFileTypeMap();
+
+        var filePath = getUrlParameter("filePath");
+        if (!filePath) {
+            filePath = "";
+        }
+        var filePathDecode= Base64.decode(filePath);
+        //展示文件夹上方的文件目录树
+        var dirListApp = new Vue({
+            el: '#dirList',
+            data: {
+                dirItems: [],
+                rootDir:""
+            }
+        });
+        //展示文件以及文件夹内容
+        var fileBodyApp = new Vue({
+            el: '#file-body',
+            data: {
+                items: {}
+            },
+            methods:{
+                fileDelete:function (event) {
+                    var tr=$(event.target).parents("tr");
+                    var fileName=tr.attr("file_name");
+                    if (confirm("您确定要删除文件 "+fileName+" 吗？")) {
+                        var filePath=tr.attr("file_path");
+                        var fromData={
+                            filePath:filePath
+                        };
+                        $.ajax({
+                            type: "POST",
+                            url: "api/file/delete",
+                            data: urlencodeFormData(fromData),
+                            "Content-Type":"application/x-www-form-urlencoded",
+                            processData: false,
+                            cache: false,
+                            timeout: 6000000,
+                            success: function (data) {
+                                if(data.errcode==0){
+                                    alert("删除文件成功");
+                                }else {
+                                    alert(data.errmsg);
+                                }
+                                loadFileBody();
+                            },
+                            error: function (e) {
+                                alert("删除文件失败");
+                                loadFileBody();
+                            }
+                        });
+                    }
+                },
+                fileRename:function (event) {
+                    var tr=$(event.target).parents("tr");
+                    var fileName=tr.attr("file_name");
+                    $("#rename [name='oldFileName']").val(fileName);
+                    $("#rename [name='newFileName']").val(fileName);
+                    $("#rename").modal('show');
+
+                },
+                moveOrCopy:function (event) {
+                    var tr=$(event.target).parents("tr");
+                    var fileName=tr.attr("file_name");
+
+                    $("#moveOrCopy").attr("base64_file_path",filePath);
+                    $("#moveOrCopy").attr("file_name",fileName);
+                    loadMoveOrCopyApp();
+                }
+            }
+        });
+        //展示复制/移动文件内容
+        var moveOrCopyApp=new Vue({
+            el: '#moveOrCopy',
+            data: {
+                filePathItems: [],
+                dirItems:[],
+                base64FilePath:"",
+                fileName:""
+            },
+            methods:{
+                //点击了文件夹，重新加载内容
+                dirClick:function (event) {
+                    var $this=$(event.target);
+                    var base64FilePath=$this.attr("base64_file_path");
+                    $("#moveOrCopy").attr("base64_file_path",base64FilePath);
+                    loadMoveOrCopyApp();
+                },
+                //触发了复制移动按钮
+                moveOrCopyAction:function (event) {
+                    var $this=$(event.target);
+                    var actionType=$this.attr("action_type");
+                    var fileName= $("#moveOrCopy").attr("file_name");
+                    var oldFilePath=filePathDecode+"/"+fileName;
+                    var newBase64FilePath=$("#moveOrCopy").attr("base64_file_path");
+                    var newFilePath=Base64.decode(newBase64FilePath)+"/"+fileName;
+                    var data = {
+                        actionType:actionType,
+                        oldFilePath:oldFilePath,
+                        newFilePath:newFilePath
+                    };
+                    console.log(data)
+                    $.ajax({
+                        type: "POST",
+                        url: "api/file/moveOrCopyFile",
+                        data: urlencodeFormData(data),
+                        "Content-Type":"application/x-www-form-urlencoded",
+                        processData: false,
+                        cache: false,
+                        timeout: 6000000,
+                        success: function (data) {
+                            if(data.errcode==0){
+                                if(actionType===1){
+                                    alert("复制文件成功");
+                                }else if(actionType===2){
+                                    alert("移动文件成功");
+                                }
+                            }else {
+                                alert(data.errmsg);
+                            }
+                            loadFileBody();
+                            $("#moveOrCopy").modal('hide');
+                        },
+                        error: function (e) {
+                            alert("操作失败");
+                        }
+                    });
+                }
+            }
+        });
+        //加载文件夹树
+        function loadDirList() {
+            var dirList=[];
+            var rootDir={
+                name:"home",
+                base64FilePath:""
+            };
+            dirList[0]=rootDir;
+            var filePathList=filePathDecode.split("/");
+            var tempFilePath="";
+            for(index in filePathList){
+                var temp =filePathList[index];
+                if(temp&&temp.length>1){
+                    tempFilePath=tempFilePath+"/"+temp;
+                    var dir={
+                        name:temp,
+                        base64FilePath:Base64.encodeURI(tempFilePath)
+                    };
+                    dirList[dirList.length]=dir;
+                }
+            }
+            console.log(dirList)
+            dirListApp.$data.dirItems=dirList;
+        }
+        loadDirList();
+        //加载复制/移动框
+        function loadMoveOrCopyApp(){
+            var filePathBase64= $("#moveOrCopy").attr("base64_file_path");
+            if (!filePathBase64) {
+                filePathBase64 = "";
+            }
+            var filePath=Base64.decode(filePathBase64);
+            var dirList=[];
+            var rootDir={
+                name:"home",
+                base64FilePath:""
+            };
+            dirList[0]=rootDir;
+            var filePathList=filePath.split("/");
+            var tempFilePath="";
+            for(index in filePathList){
+                var temp =filePathList[index];
+                if(temp&&temp.length>1){
+                    tempFilePath=tempFilePath+"/"+temp;
+                    var dir={
+                        name:temp,
+                        base64FilePath:Base64.encodeURI(tempFilePath)
+                    };
+                    dirList[dirList.length]=dir;
+                }
+            }
+            moveOrCopyApp.$data.filePathItems=dirList;
+
+            $.post("api/file/dir?onlyDir=true&filePath=" + filePathBase64, function (data) {
+                data = data.data;
+                for(index in data){
+                    var item =data[index];
+                    item.lastModifiedTime=datefmt(item.lastModifiedTime,"yyyy-MM-dd hh:mm:ss");
+                    item.base64FilePath=Base64.encodeURI(item.relativeFilePath);
+                }
+                moveOrCopyApp.$data.dirItems=data;
+
+                $("#moveOrCopy").modal('show');
+            });
+        }
+        //加载文件和文件夹内容
+        function loadFileBody(){
+            $.post("api/file/dir?filePath=" + filePath, function (data) {
+                data = data.data;
+
+                for(index in data){
+                    var item =data[index];
+                    item.fileSize=formatBytes(item.fileSize);
+                    item.base64FilePath=Base64.encodeURI(item.relativeFilePath);
+                    item.lastModifiedTime=datefmt(item.lastModifiedTime,"yyyy-MM-dd hh:mm:ss")
+                    item.creationTime=datefmt(item.creationTime,"yyyy-MM-dd hh:mm:ss")
+                    var type=item.fileType;
+                    if(type){
+                        item.fileType=type.toLowerCase();
+                    }
+                    var fmtType=null;
+                    if(!item.dir&&type){
+                        fmtType=fileTypeMap[type];
+                        if(fmtType==null){
+                            fmtType="default";
+                        }
+                    }else if(item.dir){
+                        fmtType="folder";
+                    }else {
+                        fmtType="default";
+                    }
+                    item.fmtType=fmtType;
+                }
+                fileBodyApp.$data.items=data;
+            });
+        }
+        loadFileBody();
+        //上传文件
+        $('[name="file"]').change(function(){
+            if($(this).val()){
+                var file=$(this).val();
+                var pos = file.lastIndexOf("\\");
+                var filename = file.substring(pos+1);
+                var fileSavePathValue=filePathDecode+"/"+filename;
+
+                // Get form
+                var form = $('.uploadForm')[0];
+
+                // Create an FormData object
+                var data = new FormData(form);
+
+                // If you want to add an extra field for the FormData
+                data.append("fileSavePath", fileSavePathValue);
+
+                $.ajax({
+                    type: "POST",
+                    enctype: 'multipart/form-data',
+                    url: "api/file/upload",
+                    data: data,
+                    processData: false,
+                    contentType: false,
+                    cache: false,
+                    timeout: 6000000,
+                    success: function (data) {
+                        alert("上传成功")
+                        loadFileBody()
+                    },
+                    error: function (e) {
+                        alert("上传失败")
+                    },
+                    beforeSend:function (data) {
+                        alert("正在上传中，请勿关闭窗口")
+                    }
+                });
+            }
+        });
+        $(".uploadButton").click(function(){
+            $(".uploadForm [name='file']").click();
+        });
+
+        //新建文件夹
+        $("#createDir .createDirClick").click(function(){
+            var  fileName = $("#createDir [name='createDirNmae']").val();
+
+            var filePath=filePathDecode;
+            var data = {
+                fileName:fileName,
+                filePath:filePath,
+                isDir:true
+            };
+            $.ajax({
+                type: "POST",
+                url: "api/file/createNewFile",
+                data: urlencodeFormData(data),
+                "Content-Type":"application/x-www-form-urlencoded",
+                processData: false,
+                cache: false,
+                timeout: 6000000,
+                success: function (data) {
+                    alert("创建文件夹成功");
+                    loadFileBody();
+                    $($("#createDir").find(".close")).click();
+                    $("#createDir [name='createDirNmae']").val("");
+                },
+                error: function (e) {
+                    alert("创建文件夹失败");
+                }
+            });
+        });
+
+        //重重名文件夹
+        $("#rename .buttonClick").click(function(){
+            var  oldFileName = $("#rename").find("[name='oldFileName']").val();
+            var  newFileName = $("#rename").find("[name='newFileName']").val();
+            var filePath=filePathDecode;
+            var data = {
+                filePath:filePath,
+                newFileName:newFileName,
+                oldFileName:oldFileName
+            };
+            $.ajax({
+                type: "POST",
+                url: "api/file/renameFile",
+                data: urlencodeFormData(data),
+                "Content-Type":"application/x-www-form-urlencoded",
+                processData: false,
+                cache: false,
+                timeout: 6000000,
+                success: function (data) {
+                    if(data.errcode==0){
+                        alert("重名文件成功");
+                    }else {
+                        alert(data.errmsg);
+                    }
+                    loadFileBody();
+                    $($("#rename").find(".close")).click();
+                    $("#rename").find("[name='oldFileName']").val("");
+                    $("#rename").find("[name='newFileName']").val("");
+
+                },
+                error: function (e) {
+                    alert("创建文件夹失败");
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

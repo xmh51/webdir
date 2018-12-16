@@ -18,7 +18,7 @@
     <properties>
         <lombok.version>1.16.6</lombok.version>
         <apache-commons-lang3>3.3.2</apache-commons-lang3>
-        <httpclient.version>4.3.5</httpclient.version>
+        <httpclient.version>4.3.6</httpclient.version>
         <fastjson.version>1.2.28</fastjson.version>
         <servlet.version>3.1.0</servlet.version>
         <commons-logging>1.2</commons-logging>

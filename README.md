@@ -2,7 +2,8 @@
 
 #### 项目介绍
 多账户 文件管理系统 配合aria2 可以离线下载
-新建文件夹 重命名文件 等文件管理的基本功能
+新建文件夹 重命名文件 等文件管理的基本功能  
+aria2 无需前端配置，不需要使用方配置繁琐的aria2配置
 
 
 #### 软件架构
@@ -20,12 +21,12 @@
 
 1. 离线下载需要 aria2 
 2. 中文乱码解决。设置linux 系统字符集为utf-8 设置完成后需要重启
-3. 运行 aria2 需要和tomcat 同系统账户运行，防止无法删除文件
-    指定 用户运行
-    debian 
-    -u www  -g group "aria2c --conf-path=/data/aria2/conf/aria2.conf -D"
-    centos  
-    su - www -c "aria2c --conf-path=/data/aria2/conf/aria2.conf -D"
+3. 运行 aria2 需要和tomcat 同系统账户运行，防止无法删除文件  
+   指定 用户运行  
+   debian  
+   -u www  -g group "aria2c --conf-path=/data/aria2/conf/aria2.conf -D"  
+   centos    
+   su - www -c "aria2c --conf-path=/data/aria2/conf/aria2.conf -D"  
 4. 支持多个用户,在配置文件添加用户，重启即可
 #### 参与贡献
 
